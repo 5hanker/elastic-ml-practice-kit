@@ -1,0 +1,86 @@
+{
+  "id": "mlws-ml-per-partition-15m",
+  "_notes": [
+    "consumer 'alerts' is in authorized_consumers of .es-query on Serverless 9.6 (alongside stackAlerts, discover, logs, observability, infrastructure); source: GET /api/alerting/rule_types. 'stackAlerts' is the alternative for Stack-style rules.",
+    "action group 'query matched' confirmed from the same listing.",
+    "Interim results are EXCLUDED (is_interim=false) so an alert only fires on finalized bucket results and cannot fire on a value that later disappears. Trade-off: the alert is delayed until the 15m bucket is finalized (up to bucket_span + query_delay after the bucket starts). The native rule mlws-ml-native-record also uses includeInterim=false, so the two are comparable.",
+    "The 'timestamp' of an ML record is the START of its bucket, so with a 15m window a record is only found while bucket start is within the last 15m. A 15m window on 15m buckets can miss a record that is finalized late; this is the point of the 15m vs 30m comparison.",
+    "groupBy=top over termField [job_id, partition_field_value] gives one alert per (job, partition) (service, app_code, site); multi-field grouping is supported for 2-4 fields. Records without a partition (e.g. population jobs) are not grouped. Reading .ml-anomalies-* from a rule on Serverless needs the rule API key to have read on .ml-anomalies-* (confirm in an end-to-end run).",
+    "The esQuery filter is scoped to the single job mlws-apm-multimetric (term job_id). A prefix filter (prefix job_id) would cover every job in one rule; here one job keeps the workshop alert readable.",
+    "Mustache cannot compute a max over hits, so the alert payload carries a 'records' list with one entry per hit (job, partition, score, actual, typical, function, field, timestamp, influencers, explorer link); hit_count is context.value (number of matching records)."
+  ],
+  "body": {
+    "name": "mlws-ml-per-partition-15m",
+    "rule_type_id": ".es-query",
+    "consumer": "alerts",
+    "schedule": {
+      "interval": "1m"
+    },
+    "tags": [
+      "mlws"
+    ],
+    "params": {
+      "searchType": "esQuery",
+      "esQuery": "{\"query\": {\"bool\": {\"filter\": [{\"term\": {\"job_id\": \"mlws-apm-multimetric\"}}, {\"term\": {\"result_type\": \"record\"}}, {\"range\": {\"record_score\": {\"gte\": 75}}}, {\"term\": {\"is_interim\": false}}]}}}",
+      "index": [
+        ".ml-anomalies-*"
+      ],
+      "timeField": "timestamp",
+      "timeWindowSize": 15,
+      "timeWindowUnit": "m",
+      "threshold": [
+        0
+      ],
+      "thresholdComparator": ">",
+      "size": 10,
+      "aggType": "count",
+      "groupBy": "top",
+      "termField": [
+        "job_id",
+        "partition_field_value"
+      ],
+      "termSize": 50,
+      "excludeHitsFromPreviousRun": false
+    },
+    "actions": [
+      {
+        "id": "mlws-alerts",
+        "group": "query matched",
+        "frequency": {
+          "summary": false,
+          "notify_when": "onActionGroupChange",
+          "throttle": null
+        },
+        "params": {
+          "documents": [
+            {
+              "@timestamp": "{{context.date}}",
+              "rule": "{{rule.name}}",
+              "alert_id": "{{alert.id}}",
+              "hit_count": "{{context.value}}",
+              "conditions": "{{context.conditions}}",
+              "link": "{{{context.link}}}",
+              "records": "{{#context.hits}}job={{_source.job_id}} partition={{_source.partition_field_value}} score={{_source.record_score}} actual={{_source.actual}} typical={{_source.typical}} function={{_source.function}}({{_source.field_name}}) at={{_source.timestamp}} influencers=[{{#_source.influencers}}{{influencer_field_name}}={{influencer_field_values}}; {{/_source.influencers}}] explorer={{{kibanaBaseUrl}}}/app/ml/explorer?_g=(ml:(jobIds:!({{_source.job_id}}))) | {{/context.hits}}"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "email_action": {
+    "id": "{{EMAIL_CONNECTOR_ID}}",
+    "group": "query matched",
+    "frequency": {
+      "summary": false,
+      "notify_when": "onActionGroupChange",
+      "throttle": null
+    },
+    "params": {
+      "to": [
+        "{{ALERT_EMAIL}}"
+      ],
+      "subject": "[ML Workshop] ML per-partition (15m look-back): {{alert.id}} ({{context.value}} records)",
+      "message": "**{{rule.name}}** matched for **{{alert.id}}**.\n\n- Matching anomaly records in window: {{context.value}}\n- Condition: {{context.conditions}}\n- Date: {{context.date}}\n\n**Records:**\n{{#context.hits}}- {{_source.job_id}} / {{_source.partition_field_value}}: score {{_source.record_score}}, {{_source.function}}({{_source.field_name}}) actual={{_source.actual}} typical={{_source.typical}} at {{_source.timestamp}}; influencers: {{#_source.influencers}}{{influencer_field_name}}={{influencer_field_values}}; {{/_source.influencers}} [Anomaly Explorer]({{{kibanaBaseUrl}}}/app/ml/explorer?_g=(ml:(jobIds:!({{_source.job_id}}))))\n{{/context.hits}}\n[Open in Kibana]({{{context.link}}})"
+    }
+  }
+}

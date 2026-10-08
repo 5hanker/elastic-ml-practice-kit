@@ -1,0 +1,75 @@
+{
+  "job_id": "mlws-logs-errors-correct",
+  "requires": null,
+  "job": {
+    "description": "Counts error-ish events per app_code whatever the log level (an error_code is present, or the level is error/critical/fatal), bucketed on @timestamp. Correct configuration: the fix for a level-only filter, so a burst of INFO-level error messages is still seen.",
+    "groups": [
+      "mlws"
+    ],
+    "analysis_config": {
+      "bucket_span": "15m",
+      "detectors": [
+        {
+          "detector_description": "High count of log documents for each app_code",
+          "function": "high_count",
+          "partition_field_name": "app_code.keyword"
+        }
+      ],
+      "influencers": [
+        "app_code.keyword",
+        "error_name.keyword",
+        "app_build.keyword"
+      ]
+    },
+    "analysis_limits": {
+      "model_memory_limit": "128mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp"
+    },
+    "results_index_name": "shared",
+    "allow_lazy_open": true,
+    "model_plot_config": {
+      "enabled": true,
+      "annotations_enabled": true
+    }
+  },
+  "datafeed": {
+    "indices": [
+      "logs-mlws.app-default"
+    ],
+    "query": {
+      "bool": {
+        "should": [
+          {
+            "exists": {
+              "field": "error_code"
+            }
+          },
+          {
+            "terms": {
+              "level.keyword": [
+                "error",
+                "ERROR",
+                "critical",
+                "CRITICAL",
+                "fatal",
+                "FATAL"
+              ]
+            }
+          }
+        ],
+        "minimum_should_match": 1
+      }
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    },
+    "scroll_size": 5000
+  },
+  "forecast": null,
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > data view 'App logs (workshop)' > Advanced (time field @timestamp). Detector high_count, partition field app_code.keyword. Influencers app_code.keyword, error_name.keyword, app_build.keyword. Bucket span 15m. Set the query to error_code : * or level.keyword : (error or ERROR or critical or CRITICAL or fatal or FATAL) (an 'error-ish' filter). Job ID mlws-logs-errors-correct, group mlws.",
+  "teaches": "Counts error-ish events whatever the log level - the fix for a level-only filter. A document is error-ish if it has an error_code or an error-level severity, so the A5 ABC catalog-sync rejections (logged at INFO, but carrying error_code CS-422) jump x8 and this job scores ABC high."
+}

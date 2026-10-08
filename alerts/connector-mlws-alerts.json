@@ -1,0 +1,10 @@
+{
+  "id": "mlws-alerts",
+  "connector_type_id": ".index",
+  "name": "mlws-alerts",
+  "config": {
+    "index": "mlws-alerts-history",
+    "executionTimeField": "@timestamp",
+    "refresh": true
+  }
+}

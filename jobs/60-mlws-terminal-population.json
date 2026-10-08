@@ -1,0 +1,64 @@
+{
+  "job_id": "mlws-terminal-population",
+  "requires": "with_population",
+  "job": {
+    "description": "Population analysis: which terminals log an unusually high number of error-level documents compared with the rest of the population.",
+    "groups": [
+      "mlws"
+    ],
+    "analysis_config": {
+      "bucket_span": "15m",
+      "detectors": [
+        {
+          "detector_description": "High error count for a terminal compared with the terminal population",
+          "function": "high_count",
+          "over_field_name": "terminal_id.keyword"
+        }
+      ],
+      "influencers": [
+        "terminal_id.keyword",
+        "store_id.keyword"
+      ]
+    },
+    "analysis_limits": {
+      "model_memory_limit": "64mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp"
+    },
+    "results_index_name": "shared",
+    "allow_lazy_open": true
+  },
+  "datafeed": {
+    "indices": [
+      "logs-mlws.app-default"
+    ],
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "terms": {
+              "level.keyword": [
+                "error",
+                "ERROR",
+                "critical",
+                "CRITICAL",
+                "fatal",
+                "FATAL"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    },
+    "scroll_size": 5000
+  },
+  "forecast": null,
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > data view 'App logs (workshop)' > Population. Population field terminal_id.keyword, metric Count (switch to high_count in Advanced), query level.keyword : (error or ERROR or critical or CRITICAL or fatal or FATAL), influencers terminal_id.keyword and store_id.keyword, bucket span 15m. Job ID mlws-terminal-population, group mlws.",
+  "teaches": "Population jobs compare each entity with its peers instead of its own history, which suits thousands of terminals. A7: terminal T-0117-04 logs 30 'Printer offline' errors per minute. Forecasts are not available for population jobs."
+}

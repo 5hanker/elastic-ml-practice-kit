@@ -1,0 +1,21 @@
+{
+  "description": "ML workshop: run the standard logs pipeline, then stamp event.ingested",
+  "processors": [
+    {
+      "pipeline": {
+        "name": "logs@default-pipeline",
+        "ignore_missing_pipeline": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.ingested",
+        "value": "{{{_ingest.timestamp}}}"
+      }
+    }
+  ],
+  "_meta": {
+    "managed_by": "elastic-ml-workshop"
+  }
+}

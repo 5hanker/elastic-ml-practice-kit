@@ -1,0 +1,87 @@
+{
+  "id": "mlws-ml-jobs-health",
+  "_notes": [
+    "consumer 'alerts' in authorized_consumers of xpack.ml.anomaly_detection_jobs_health (also ml, observability, stackAlerts); action group 'anomaly_detection_realtime_issue' confirmed from GET /api/alerting/rule_types.",
+    "delayedData.thresholdType is 'count' with docsCount 1 (spec enum count|percentage). context.results is an array of objects; it is rendered as a string in the document.",
+    "behindRealtime is disabled so the setup-day backfill (datafeeds far behind real time) does not write noise into the alerts history. datafeed, mml, delayedData and errorMessages checks stay on."
+  ],
+  "body": {
+    "name": "mlws-ml-jobs-health",
+    "rule_type_id": "xpack.ml.anomaly_detection_jobs_health",
+    "consumer": "alerts",
+    "schedule": {
+      "interval": "1m"
+    },
+    "tags": [
+      "mlws"
+    ],
+    "params": {
+      "includeJobs": {
+        "jobIds": [],
+        "groupIds": [
+          "mlws"
+        ]
+      },
+      "excludeJobs": null,
+      "testsConfig": {
+        "datafeed": {
+          "enabled": true
+        },
+        "mml": {
+          "enabled": true
+        },
+        "delayedData": {
+          "enabled": true,
+          "docsCount": 1,
+          "thresholdType": "count",
+          "timeInterval": null
+        },
+        "behindRealtime": {
+          "enabled": false,
+          "timeInterval": null
+        },
+        "errorMessages": {
+          "enabled": true
+        }
+      }
+    },
+    "actions": [
+      {
+        "id": "mlws-alerts",
+        "group": "anomaly_detection_realtime_issue",
+        "frequency": {
+          "summary": false,
+          "notify_when": "onActionGroupChange",
+          "throttle": null
+        },
+        "params": {
+          "documents": [
+            {
+              "@timestamp": "{{date}}",
+              "rule": "{{rule.name}}",
+              "alert_id": "{{alert.id}}",
+              "message": "{{context.message}}",
+              "results": "{{context.results}}"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "email_action": {
+    "id": "{{EMAIL_CONNECTOR_ID}}",
+    "group": "anomaly_detection_realtime_issue",
+    "frequency": {
+      "summary": false,
+      "notify_when": "onActionGroupChange",
+      "throttle": null
+    },
+    "params": {
+      "to": [
+        "{{ALERT_EMAIL}}"
+      ],
+      "subject": "[ML Workshop] {{rule.name}}: ML job health issue",
+      "message": "**{{rule.name}}** detected an issue with anomaly detection jobs in group mlws.\n\n{{context.message}}\n\n{{context.results}}"
+    }
+  }
+}

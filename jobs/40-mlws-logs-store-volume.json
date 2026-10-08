@@ -1,0 +1,54 @@
+{
+  "job_id": "mlws-logs-store-volume",
+  "requires": null,
+  "job": {
+    "description": "Low log volume per site (store_id), to spot a site that stops reporting.",
+    "groups": [
+      "mlws"
+    ],
+    "analysis_config": {
+      "bucket_span": "15m",
+      "detectors": [
+        {
+          "detector_description": "Unusually low log count for each site",
+          "function": "low_count",
+          "partition_field_name": "store_id.keyword"
+        }
+      ],
+      "influencers": [
+        "store_id.keyword",
+        "tenant_name.keyword",
+        "app_code.keyword"
+      ]
+    },
+    "analysis_limits": {
+      "model_memory_limit": "128mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp"
+    },
+    "results_index_name": "shared",
+    "allow_lazy_open": true,
+    "model_plot_config": {
+      "enabled": true,
+      "annotations_enabled": true
+    }
+  },
+  "datafeed": {
+    "indices": [
+      "logs-mlws.app-default"
+    ],
+    "query": {
+      "match_all": {}
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    },
+    "scroll_size": 5000
+  },
+  "forecast": null,
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > data view 'App logs (workshop)' > Multi-metric. Metric Count, split field store_id.keyword, influencers store_id.keyword, tenant_name.keyword, app_code.keyword, bucket span 15m (low_count is set in the Advanced wizard). Job ID mlws-logs-store-volume, group mlws.",
+  "teaches": "low_count models zero-count buckets, so a silent site is detected. A3 silences flagship site S-0117 for 120 minutes. Because S-0117 has about 4x normal volume, its drop is large relative to its own baseline."
+}

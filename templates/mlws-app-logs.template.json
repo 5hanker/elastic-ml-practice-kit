@@ -1,0 +1,232 @@
+{
+  "index_patterns": [
+    "logs-mlws.app-*"
+  ],
+  "data_stream": {},
+  "priority": 250,
+  "composed_of": [
+    "logs@mappings",
+    "logs@settings",
+    "ecs@mappings",
+    "logs@custom"
+  ],
+  "ignore_missing_component_templates": [
+    "logs@custom"
+  ],
+  "template": {
+    "settings": {
+      "index.mode": "logsdb",
+      "index.default_pipeline": "mlws-app-logs"
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "event": {
+          "properties": {
+            "ingested": {
+              "type": "date"
+            }
+          }
+        },
+        "app_env": {
+          "type": "keyword"
+        },
+        "app_region": {
+          "type": "keyword"
+        },
+        "store_code": {
+          "type": "keyword"
+        },
+        "service": {
+          "properties": {
+            "name": {
+              "type": "keyword"
+            }
+          }
+        },
+        "trace": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "request_path": {
+          "type": "keyword"
+        },
+        "http_method": {
+          "type": "keyword"
+        },
+        "response_time_ms": {
+          "type": "long"
+        },
+        "db_queue_size": {
+          "type": "long"
+        },
+        "sync_duration_ms": {
+          "type": "float"
+        },
+        "args": {
+          "properties": {
+            "status_code": {
+              "type": "long"
+            }
+          }
+        },
+        "app_code": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "level": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "app_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "app_build": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "error_code": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "error_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "tenant_id": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "tenant_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "store_id": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "store_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "terminal_id": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "app_version": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "payment_error_code": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "payment_error_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "device_id": {
+          "type": "keyword"
+        },
+        "order_source": {
+          "type": "keyword"
+        },
+        "delivery_partner": {
+          "type": "keyword"
+        },
+        "processing_time_ms": {
+          "type": "long"
+        },
+        "http_error_status": {
+          "type": "long"
+        },
+        "pipeline_queue_size": {
+          "type": "long"
+        },
+        "orders_amount": {
+          "type": "float"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "ML workshop application logs (fictional data)",
+    "managed_by": "elastic-ml-workshop"
+  }
+}

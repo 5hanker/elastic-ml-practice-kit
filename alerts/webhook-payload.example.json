@@ -1,0 +1,9 @@
+{
+  "_notes": "Documentation only (not used by setup). Example body for a chat or paging webhook, sent by an Elastic Webhook connector (POST, JSON). The receiving service must declare text keys with these exact names. Values are Kibana mustache variables from the ML anomaly detection rule (xpack.ml.anomaly_detection_alert): jobName <- context.jobIds, score <- context.score (top record score), timestamp <- context.timestampIso8601, topInfluencers <- context.topInfluencers, topRecords <- context.topRecords, anomalyExplorerUrl <- context.anomalyExplorerUrl. Use triple braces for URLs to avoid HTML escaping. For the es-query per-partition rules the equivalent per-hit mapping is the 'records' field (see alerts/rule-mlws-ml-per-partition.json).",
+  "jobName": "{{context.jobIds}}",
+  "score": "{{context.score}}",
+  "timestamp": "{{context.timestampIso8601}}",
+  "topInfluencers": "{{#context.topInfluencers}}{{influencer_field_name}}={{influencer_field_value}} ({{score}}); {{/context.topInfluencers}}",
+  "topRecords": "{{#context.topRecords}}{{function}}({{field_name}}) by={{by_field_value}} over={{over_field_value}} partition={{partition_field_value}} actual={{actual}} typical={{typical}} score={{score}}; {{/context.topRecords}}",
+  "anomalyExplorerUrl": "{{{context.anomalyExplorerUrl}}}"
+}

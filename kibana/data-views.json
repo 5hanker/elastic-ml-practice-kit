@@ -1,0 +1,27 @@
+[
+  {
+    "id": "mlws-dv-app-logs",
+    "title": "logs-mlws.app-*",
+    "name": "App logs (workshop)",
+    "timeFieldName": "@timestamp"
+  },
+  {
+    "id": "mlws-dv-apm",
+    "title": "traces-apm-mlws,logs-apm.error-mlws,metrics-apm.*-mlws",
+    "name": "APM (workshop)",
+    "timeFieldName": "@timestamp"
+  },
+  {
+    "id": "mlws-dv-ml-anomalies",
+    "title": ".ml-anomalies-*",
+    "name": "ML anomalies (workshop)",
+    "timeFieldName": "timestamp",
+    "allowHidden": true
+  },
+  {
+    "id": "mlws-dv-alerts",
+    "title": "mlws-alerts-history",
+    "name": "Alerts history (workshop)",
+    "timeFieldName": "@timestamp"
+  }
+]

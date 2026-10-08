@@ -1,0 +1,69 @@
+{
+  "job_id": "mlws-logs-errors-level-filtered",
+  "requires": null,
+  "job": {
+    "description": "Twin of mlws-logs-errors-correct with identical settings; the only difference is the datafeed query, which reads error-level documents only (level.keyword in error, ERROR, critical, CRITICAL, fatal, FATAL). Shows what a level-only filter misses.",
+    "groups": [
+      "mlws"
+    ],
+    "analysis_config": {
+      "bucket_span": "15m",
+      "detectors": [
+        {
+          "detector_description": "High count of log documents for each app_code",
+          "function": "high_count",
+          "partition_field_name": "app_code.keyword"
+        }
+      ],
+      "influencers": [
+        "app_code.keyword",
+        "error_name.keyword",
+        "app_build.keyword"
+      ]
+    },
+    "analysis_limits": {
+      "model_memory_limit": "128mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp"
+    },
+    "results_index_name": "shared",
+    "allow_lazy_open": true,
+    "model_plot_config": {
+      "enabled": true,
+      "annotations_enabled": true
+    }
+  },
+  "datafeed": {
+    "indices": [
+      "logs-mlws.app-default"
+    ],
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "terms": {
+              "level.keyword": [
+                "error",
+                "ERROR",
+                "critical",
+                "CRITICAL",
+                "fatal",
+                "FATAL"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    },
+    "scroll_size": 5000
+  },
+  "forecast": null,
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > data view 'App logs (workshop)' > Advanced (time field @timestamp). Detector high_count, partition field app_code.keyword. Influencers app_code.keyword, error_name.keyword, app_build.keyword. Bucket span 15m. Set the query to level.keyword : (error or ERROR or critical or CRITICAL or fatal or FATAL). Job ID mlws-logs-errors-level-filtered, group mlws. Everything else matches mlws-logs-errors-correct (128mb model memory limit, query delay 90s).",
+  "teaches": "Filtering on level hides problems that are logged at the wrong severity. In A5 the ABC failures are INFO, so this job sees no ABC spike (score stays low) while the correct twin alerts. Use Datafeed preview on both jobs around A5 to see the difference. It still catches XYZ (A4) and DEF (A6), where the failures are ERROR. The two jobs use identical settings so the datafeed query is the only variable."
+}

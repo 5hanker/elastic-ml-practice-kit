@@ -1,0 +1,61 @@
+{
+  "job_id": "mlws-logs-categories",
+  "requires": null,
+  "job": {
+    "description": "Categorizes the message field per app_code: count by category and rare categories.",
+    "groups": [
+      "mlws"
+    ],
+    "analysis_config": {
+      "bucket_span": "15m",
+      "detectors": [
+        {
+          "detector_description": "Count of messages per category for each app_code",
+          "function": "count",
+          "by_field_name": "mlcategory",
+          "partition_field_name": "app_code.keyword"
+        },
+        {
+          "detector_description": "Rare message category for each app_code",
+          "function": "rare",
+          "by_field_name": "mlcategory",
+          "partition_field_name": "app_code.keyword"
+        }
+      ],
+      "influencers": [
+        "mlcategory",
+        "app_code.keyword"
+      ],
+      "categorization_field_name": "message",
+      "per_partition_categorization": {
+        "enabled": true,
+        "stop_on_warn": true
+      }
+    },
+    "analysis_limits": {
+      "model_memory_limit": "256mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp"
+    },
+    "results_index_name": "shared",
+    "allow_lazy_open": true
+  },
+  "datafeed": {
+    "indices": [
+      "logs-mlws.app-default"
+    ],
+    "query": {
+      "match_all": {}
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    },
+    "scroll_size": 5000
+  },
+  "forecast": null,
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > data view 'App logs (workshop)' > Categorization. Categorization field message, detector Count, enable 'Per-partition categorization' with partition field app_code.keyword and 'Stop on warn'. Then add the Rare detector in the Advanced wizard. Bucket span 15m, job ID mlws-logs-categories, group mlws.",
+  "teaches": "Per-partition categorization groups messages separately for each app_code. A5 adds a brand-new message type 'Catalog sync ... rejected: HTTP 422' (rare and high count in ABC) and A6 adds 'Inventory delta rejected' messages in DEF."
+}

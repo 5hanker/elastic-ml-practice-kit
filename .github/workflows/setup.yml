@@ -1,0 +1,63 @@
+name: Setup workshop
+
+on:
+  workflow_dispatch:
+    inputs:
+      reload:
+        description: "Delete and regenerate data and ML jobs (--reload)"
+        type: boolean
+        default: false
+      with_population:
+        description: "Include the population job and its data (--with-population)"
+        type: boolean
+        default: false
+      prebuild_module_job:
+        description: "Pre-create the APM transaction-metrics job (--prebuild-module-job)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mlws-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ELASTIC_KIBANA_URL: ${{ secrets.ELASTIC_KIBANA_URL }}
+      ELASTIC_API_KEY: ${{ secrets.ELASTIC_API_KEY }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check secrets
+        run: |
+          missing=""
+          [ -n "$ELASTIC_KIBANA_URL" ] || missing="$missing ELASTIC_KIBANA_URL"
+          [ -n "$ELASTIC_API_KEY" ] || missing="$missing ELASTIC_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing. Add them under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+      - name: Run setup
+        run: |
+          args="--yes"
+          [ "${{ inputs.reload }}" = "true" ] && args="$args --reload"
+          [ "${{ inputs.with_population }}" = "true" ] && args="$args --with-population"
+          [ "${{ inputs.prebuild_module_job }}" = "true" ] && args="$args --prebuild-module-job"
+          python setup.py setup $args
+      - name: Verify
+        run: python setup.py verify --allow-pending
+      - name: Upload verify report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-report
+          path: verify-report.json
+          if-no-files-found: ignore

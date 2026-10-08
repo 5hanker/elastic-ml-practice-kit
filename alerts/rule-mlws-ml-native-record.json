@@ -1,0 +1,77 @@
+{
+  "id": "mlws-ml-native-record",
+  "_notes": [
+    "consumer 'alerts' is listed in authorized_consumers for xpack.ml.anomaly_detection_alert on a Serverless 9.6 Observability project (GET /api/alerting/rule_types); other accepted values there: ml, stackAlerts, observability, logs, infrastructure.",
+    "action group id 'anomaly_score_match' (default) and 'recovered' confirmed from the same rule_types listing.",
+    "The native ML rule creates ONE alert instance per job (alert id = job id), so two partitions anomalous in the same job within one run are not separate alerts. mlws-ml-per-partition is the comparison."
+  ],
+  "body": {
+    "name": "mlws-ml-native-record",
+    "rule_type_id": "xpack.ml.anomaly_detection_alert",
+    "consumer": "alerts",
+    "schedule": {
+      "interval": "1m"
+    },
+    "tags": [
+      "mlws"
+    ],
+    "params": {
+      "jobSelection": {
+        "jobIds": [
+          "mlws-apm-multimetric"
+        ],
+        "groupIds": []
+      },
+      "severity": 75,
+      "resultType": "record",
+      "includeInterim": false,
+      "lookbackInterval": null,
+      "topNBuckets": null,
+      "kqlQueryString": null
+    },
+    "actions": [
+      {
+        "id": "mlws-alerts",
+        "group": "anomaly_score_match",
+        "frequency": {
+          "summary": false,
+          "notify_when": "onActionGroupChange",
+          "throttle": null
+        },
+        "params": {
+          "documents": [
+            {
+              "@timestamp": "{{date}}",
+              "rule": "{{rule.name}}",
+              "alert_id": "{{alert.id}}",
+              "jobIds": "{{context.jobIds}}",
+              "score": "{{context.score}}",
+              "timestamp": "{{context.timestampIso8601}}",
+              "isInterim": "{{context.isInterim}}",
+              "message": "{{context.message}}",
+              "topInfluencers": "{{#context.topInfluencers}}{{influencer_field_name}}={{influencer_field_value}} ({{score}}); {{/context.topInfluencers}}",
+              "topRecords": "{{#context.topRecords}}{{function}}({{field_name}}) by={{by_field_value}} over={{over_field_value}} partition={{partition_field_value}} actual={{actual}} typical={{typical}} score={{score}}; {{/context.topRecords}}",
+              "link": "{{{context.anomalyExplorerUrl}}}"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "email_action": {
+    "id": "{{EMAIL_CONNECTOR_ID}}",
+    "group": "anomaly_score_match",
+    "frequency": {
+      "summary": false,
+      "notify_when": "onActionGroupChange",
+      "throttle": null
+    },
+    "params": {
+      "to": [
+        "{{ALERT_EMAIL}}"
+      ],
+      "subject": "[ML Workshop] {{rule.name}}: score {{context.score}}",
+      "message": "**{{rule.name}}** raised an anomaly alert.\n\n- Job: {{context.jobIds}}\n- Score: {{context.score}}\n- Time: {{context.timestampIso8601}}\n- Interim: {{context.isInterim}}\n\n{{context.message}}\n\n**Top influencers:** {{#context.topInfluencers}}{{influencer_field_name}}={{influencer_field_value}} ({{score}}); {{/context.topInfluencers}}\n\n**Top records:** {{#context.topRecords}}{{function}}({{field_name}}) by={{by_field_value}} over={{over_field_value}} partition={{partition_field_value}} actual={{actual}} typical={{typical}} score={{score}}; {{/context.topRecords}}\n\n[Open in Anomaly Explorer]({{{context.anomalyExplorerUrl}}})"
+    }
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "job_id": "mlws-apm_tx_metrics",
+  "requires": "prebuild_module_job",
+  "job": {
+    "groups": [
+      "mlws"
+    ],
+    "description": "Workshop copy of the APM Transaction module job (apm_tx_metrics): latency, throughput, failure rate and low count on 1-minute transaction metrics.",
+    "analysis_config": {
+      "bucket_span": "15m",
+      "summary_count_field_name": "doc_count",
+      "detectors": [
+        {
+          "detector_description": "high latency by transaction type for an APM service",
+          "function": "high_mean",
+          "field_name": "transaction_latency",
+          "by_field_name": "transaction.type",
+          "partition_field_name": "service.name"
+        },
+        {
+          "detector_description": "transaction throughput for an APM service",
+          "function": "mean",
+          "field_name": "transaction_throughput",
+          "by_field_name": "transaction.type",
+          "partition_field_name": "service.name"
+        },
+        {
+          "detector_description": "failed transaction rate for an APM service",
+          "function": "high_mean",
+          "field_name": "failed_transaction_rate",
+          "by_field_name": "transaction.type",
+          "partition_field_name": "service.name"
+        },
+        {
+          "detector_description": "low count of transactions for an APM service",
+          "function": "low_count",
+          "by_field_name": "transaction.type",
+          "partition_field_name": "service.name"
+        }
+      ],
+      "influencers": [
+        "transaction.type",
+        "service.name"
+      ]
+    },
+    "analysis_limits": {
+      "model_memory_limit": "32mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp",
+      "time_format": "epoch_ms"
+    },
+    "model_plot_config": {
+      "enabled": true,
+      "annotations_enabled": true
+    },
+    "results_index_name": "shared",
+    "custom_settings": {
+      "created_by": "ml-module-apm-transaction"
+    },
+    "allow_lazy_open": true
+  },
+  "datafeed": {
+    "indices": [
+      "metrics-apm.transaction.1m-mlws"
+    ],
+    "chunking_config": {
+      "mode": "off"
+    },
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "term": {
+              "processor.event": "metric"
+            }
+          },
+          {
+            "term": {
+              "metricset.name": "transaction"
+            }
+          }
+        ]
+      }
+    },
+    "aggregations": {
+      "buckets": {
+        "composite": {
+          "size": 5000,
+          "sources": [
+            {
+              "date": {
+                "date_histogram": {
+                  "field": "@timestamp",
+                  "fixed_interval": "60s"
+                }
+              }
+            },
+            {
+              "transaction.type": {
+                "terms": {
+                  "field": "transaction.type"
+                }
+              }
+            },
+            {
+              "service.name": {
+                "terms": {
+                  "field": "service.name"
+                }
+              }
+            }
+          ]
+        },
+        "aggs": {
+          "@timestamp": {
+            "max": {
+              "field": "@timestamp"
+            }
+          },
+          "transaction_throughput": {
+            "rate": {
+              "unit": "minute"
+            }
+          },
+          "transaction_latency": {
+            "avg": {
+              "field": "transaction.duration.histogram"
+            }
+          },
+          "error_count": {
+            "filter": {
+              "term": {
+                "event.outcome": "failure"
+              }
+            },
+            "aggs": {
+              "actual_error_count": {
+                "value_count": {
+                  "field": "event.outcome"
+                }
+              }
+            }
+          },
+          "success_count": {
+            "filter": {
+              "term": {
+                "event.outcome": "success"
+              }
+            }
+          },
+          "failed_transaction_rate": {
+            "bucket_script": {
+              "buckets_path": {
+                "failure_count": "error_count>_count",
+                "success_count": "success_count>_count"
+              },
+              "script": "if ((params.failure_count + params.success_count)==0){return 0;}else{return 100 * (params.failure_count/(params.failure_count + params.success_count));}"
+            }
+          }
+        }
+      }
+    },
+    "indices_options": {
+      "ignore_unavailable": true
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    }
+  },
+  "forecast": null,
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > data view 'APM (workshop)' (metrics-apm.transaction.1m-mlws) > Use preconfigured jobs > APM: Transaction data. Set Job ID prefix to mlws- (job becomes mlws-apm_tx_metrics), use the existing data view / index pattern metrics-apm.transaction.1m-mlws, pick a start time before A1, enable start in real time.",
+  "teaches": "Recognized-module wizard: a pre-built aggregation datafeed (composite + date_histogram) that uses the 1-minute pre-aggregated APM metrics, which is cheaper than the raw-transaction multi-metric job. Note that delayed-data checks do not work with filtering aggregations."
+}

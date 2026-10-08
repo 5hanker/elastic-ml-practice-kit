@@ -1,0 +1,14 @@
+.env
+*.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets*
+verify-report.json
+test-evidence/raw/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+mlws-setup.log

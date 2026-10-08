@@ -1,0 +1,45 @@
+name: Teardown workshop
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type DELETE to remove every mlws artefact from the project"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mlws-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ELASTIC_KIBANA_URL: ${{ secrets.ELASTIC_KIBANA_URL }}
+      ELASTIC_API_KEY: ${{ secrets.ELASTIC_API_KEY }}
+    steps:
+      - name: Require confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "DELETE" ]; then
+            echo "::error::Input 'confirm' must equal DELETE."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check secrets
+        run: |
+          if [ -z "$ELASTIC_KIBANA_URL" ] || [ -z "$ELASTIC_API_KEY" ]; then
+            echo "::error::Missing secrets ELASTIC_KIBANA_URL and/or ELASTIC_API_KEY."
+            exit 1
+          fi
+      - name: Teardown
+        run: python setup.py teardown --yes

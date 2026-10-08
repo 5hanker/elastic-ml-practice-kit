@@ -1,0 +1,60 @@
+{
+  "job_id": "mlws-logs-inventory-health",
+  "requires": null,
+  "job": {
+    "description": "Inventory sync health: maximum DB transaction queue size and high mean sync duration per app_code.",
+    "groups": [
+      "mlws"
+    ],
+    "analysis_config": {
+      "bucket_span": "15m",
+      "detectors": [
+        {
+          "detector_description": "Maximum DB transaction queue size for each app_code",
+          "function": "max",
+          "field_name": "db_queue_size",
+          "partition_field_name": "app_code.keyword"
+        },
+        {
+          "detector_description": "High mean sync duration (ms) for each app_code",
+          "function": "high_mean",
+          "field_name": "sync_duration_ms",
+          "partition_field_name": "app_code.keyword"
+        }
+      ],
+      "influencers": [
+        "app_code.keyword",
+        "error_name.keyword"
+      ]
+    },
+    "analysis_limits": {
+      "model_memory_limit": "128mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp"
+    },
+    "results_index_name": "shared",
+    "allow_lazy_open": true,
+    "model_plot_config": {
+      "enabled": true,
+      "annotations_enabled": true
+    }
+  },
+  "datafeed": {
+    "indices": [
+      "logs-mlws.app-default"
+    ],
+    "query": {
+      "match_all": {}
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    },
+    "scroll_size": 5000
+  },
+  "forecast": null,
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > data view 'App logs (workshop)' > Multi-metric. Metrics Max(db_queue_size) and Mean(sync_duration_ms) (change the second to high_mean in Advanced), split field app_code.keyword, influencers app_code.keyword and error_name.keyword, bucket span 15m. Job ID mlws-logs-inventory-health, group mlws.",
+  "teaches": "Numeric fields inside log documents can be modelled directly. A6 ramps the DEF queue from 50 to 6000 and multiplies syncDuration x10. Documents without the field (other app codes) are simply skipped for that detector."
+}

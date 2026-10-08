@@ -1,0 +1,84 @@
+{
+  "job_id": "mlws-apm-multimetric",
+  "requires": null,
+  "job": {
+    "description": "APM multi-metric job: transaction latency, throughput and failed-transaction count per service (workshop, fictional data).",
+    "groups": [
+      "mlws"
+    ],
+    "analysis_config": {
+      "bucket_span": "15m",
+      "detectors": [
+        {
+          "detector_description": "High mean transaction latency (us) for each service",
+          "function": "high_mean",
+          "field_name": "transaction.duration.us",
+          "partition_field_name": "service.name"
+        },
+        {
+          "detector_description": "Unusually low transaction throughput (count) for each service",
+          "function": "low_count",
+          "partition_field_name": "service.name"
+        },
+        {
+          "detector_description": "High failed-transaction count for each service",
+          "function": "high_sum",
+          "field_name": "mlws_failed",
+          "partition_field_name": "service.name"
+        }
+      ],
+      "influencers": [
+        "service.name",
+        "transaction.name",
+        "host.name"
+      ]
+    },
+    "analysis_limits": {
+      "model_memory_limit": "128mb"
+    },
+    "data_description": {
+      "time_field": "@timestamp"
+    },
+    "results_index_name": "shared",
+    "allow_lazy_open": true,
+    "model_plot_config": {
+      "enabled": true,
+      "annotations_enabled": true
+    }
+  },
+  "datafeed": {
+    "indices": [
+      "traces-apm-mlws"
+    ],
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "term": {
+              "processor.event": "transaction"
+            }
+          }
+        ]
+      }
+    },
+    "query_delay": "90s",
+    "delayed_data_check_config": {
+      "enabled": true,
+      "check_window": "2h"
+    },
+    "scroll_size": 5000,
+    "runtime_mappings": {
+      "mlws_failed": {
+        "type": "long",
+        "script": {
+          "source": "if (doc.containsKey('event.outcome') && doc['event.outcome'].size() > 0 && doc['event.outcome'].value == 'failure') { emit(1); } else { emit(0); }"
+        }
+      }
+    }
+  },
+  "forecast": {
+    "duration": "3d"
+  },
+  "ui_path": "Observability > Machine learning > Anomaly detection > Jobs > Create job > select data view 'APM (workshop)' (traces-apm-mlws) > Multi-metric. Add query 'processor.event : transaction'. Add metrics: Mean(transaction.duration.us), Count, Sum(mlws_failed); split field service.name; influencers service.name, transaction.name, host.name. Bucket span 15m. The failed-count metric Sum(mlws_failed) needs the mlws_failed runtime field, so finish in the Advanced wizard or use 'Convert to advanced job'. Enable model plot. Job ID mlws-apm-multimetric, group mlws. Start real-time.",
+  "teaches": "One job with three detectors, each split by service.name, finds latency, throughput and failure anomalies for every service at once. A2 (latency x4 on orders-api), A1 (throughput drop on cart-api) and A4 (payments-gateway failed-transaction count via high_sum on the 0/1 mlws_failed flag) should surface. high_sum is used rather than high_mean because the mean of a 0/1 flag has huge per-record variance and hides a 0.8% to 27% spike. Also shows datafeed runtime_mappings, influencers, model plot and forecasting."
+}

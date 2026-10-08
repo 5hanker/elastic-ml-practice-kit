@@ -1,0 +1,5 @@
+{
+  "name": "ML Workshop",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "postAttachCommand": "echo 'Ready. Codespaces secrets ELASTIC_KIBANA_URL and ELASTIC_API_KEY are exposed as environment variables (or copy .env.example to .env). Run: ./setup.sh   (or: python setup.py)'"
+}
