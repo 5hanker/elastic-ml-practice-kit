@@ -33,7 +33,7 @@ Keep the key private. Do not paste it into chat, email or a commit. See [Keeping
 Get the code, either way:
 
 ```
-git clone https://github.com/<owner>/elastic-ml-practice-kit.git
+git clone https://github.com/5hanker/elastic-ml-practice-kit.git
 cd elastic-ml-practice-kit
 ```
 
